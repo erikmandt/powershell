@@ -1,0 +1,8 @@
+Query logged on users:
+
+query user /server:$SERVER
+
+Last logged on user:
+
+Get-WinEvent  -Computer WS7012 -FilterHashtable @{Logname='Security';ID=4672} -MaxEvents 1|
+     select @{N='User';E={$_.Properties[1].Value}}
