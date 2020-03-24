@@ -1,0 +1,40 @@
+a set of queries to use when setting up a core server for a hyper-v host
+
+powershell your core : https://technet.microsoft.com/en-us/library/jj592692(v=ws.11).aspx
+
+sconfig
+-name/domain/remote/ping/updates/network
+
+rename: Rename-Computer : DO THIS FIRST THEN REBOOT
+join domain: Add-Computer : use corp.domain.com
+other stuff: Enable-PSRemoting -Force
+
+-config firewall for remote management : 
+Enable-NetFireWallRule -DisplayName “Windows Management Instrumentation (DCOM-In)”
+Enable-NetFireWallRule -DisplayGroup “Remote Event Log Management”
+Enable-NetFireWallRule -DisplayGroup “Remote Service Management”
+Enable-NetFireWallRule -DisplayGroup “Remote Volume Management”
+Enable-NetFireWallRule -DisplayGroup “Remote Scheduled Tasks Management”
+Enable-NetFireWallRule -DisplayGroup “Windows Firewall Remote Management”
+
+also/or
+netsh firewall set service type=remoteadmin mode=enable (create missing Remote Administration group. You'll get a depreciation warning)
+netsh advfirewall firewall set rule group="remote administration" new enable=yes
+
+-make sure to run this on mgmt server: Enable-NetFirewallRule -DisplayGroup “Remote Volume Management”
+
+nic adapter stuff
+-get infos: Get-NetIPConfiguration | select InterfaceAlias, InterfaceDescription, IPv4Address |ft -auto
+-get more infos: Get-NetAdapter | Where {$_.Status -eq "Up"}  | select name, InterfaceDescription | ft -AutoSize
+-rename: Get-NetAdapter -Name "Ethernet 1" | Rename-NetAdapter -NewName newname –PassThru
+-assign static ip: 
+	-store name $netadapter = get-netadapter –name "Ethernet"
+	-set ip $netadapter | new-netipaddress –addressfamily IPv4 –ipaddress 10.201.2.xxx –prefixlength 24 –type unicast –defaultgateway 10.201.2.1
+	-assign dns $netadapter | set-dnsclientserveraddress –interfacealias Ethernet –serveraddresses 168.99.194.10
+		-OR-Set-DnsClientServerAddress -InterfaceAlias <adapter> -ServerAddresses ("168.99.194.10","168.99.194.12")
+
+-add disk/volume : 
+Get-Disk (note disk number of new disk)
+Get-Disk -Number 1 | Initialize-Disk -PartitionStyle MBR -PassThru | New-Partition -UseMaximumSize -DriveLetter S | Format-Volume -FileSystem NTFS -NewFileSystemLabel "SQL_Data" -AllocationUnitSize 65536 -Confirm:$false (this example is for SQL with 64k alloc size)
+
+OR use diskpart...
