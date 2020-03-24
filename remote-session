@@ -1,0 +1,8 @@
+Remote PS
+$cred = get-credential domain\erikmandt.admin
+Enter-PSSession -cn <computer>
+
+Implicit Remote
+$session=New-PSSession -ComputerName <computer>
+Invoke-Command –Session $Session {Import-Module –Name VirtualMachineManager}
+Import-PSSession -Session $session -Module VirtualMachineManager (or DataProtectionManager, etc)
