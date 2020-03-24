@@ -1,0 +1,3 @@
+(italic optional for remote)
+
+Invoke-Command -cn srvhpv3 -ScriptBlock {Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | select DisplayName, Publisher, InstallDate }
