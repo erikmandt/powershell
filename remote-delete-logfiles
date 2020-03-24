@@ -1,0 +1,6 @@
+$date = Get-Date
+$days = 1
+$folder = "\\server\c$\inetpub\logs\LogFiles"
+$lastWrite = $date.AddDays(-$days)
+$files = get-childitem $folder -include *.Log -recurse | Where {$_.LastWriteTime -le "$lastWrite"}
+Remove-Item $files
