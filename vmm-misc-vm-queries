@@ -1,0 +1,11 @@
+find out what VM is running on which server in your SCVMM cluster
+Get-SCVirtualMachine | Select-Object -property HostName, Name, Description | Sort-Object -Property HostName | ft -auto
+
+find which VMs are currently running
+Get-SCVirtualMachine | where {$_.StatusString -eq "Running"} | Select Name,Status | Sort-Object -Property Name | ft -auto
+
+find vms not running
+Get-SCVirtualMachine | where {$_.StatusString -ne "Running"} | Select Name,Status | Sort-Object -Property Name | ft -auto
+
+list of vms and hosts with names like *whatever*
+Get-SCVirtualMachine | Where-Object { $_.ComputerName -like "*servername*" } | Select HostName, ComputerName
