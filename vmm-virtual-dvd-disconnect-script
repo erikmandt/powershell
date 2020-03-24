@@ -1,0 +1,35 @@
+import-module VirtualMachineManager 
+ 
+$eventSourceName = "Virtual DVD Disconnect Script" 
+ 
+# Register event source if not present 
+if ( ! [System.Diagnostics.EventLog]::SourceExists($eventSourceName) ) 
+{ [System.Diagnostics.EventLog]::CreateEventSource( $eventSourceName, "Application" ) } 
+ 
+ 
+Write-EventLog -LogName Application -EntryType Information -source $eventSourceName -EventId 1001 -Message "Virtual DVD drive disconnect script staring..." 
+ 
+$VMs = Get-VM -VMMServer "localhost" | where-object{ $_.VirtualizationPlatform -eq "HyperV" } 
+Write-EventLog -LogName Application -EntryType Information -source $eventSourceName -EventId 1002 -Message "Read $( $VMs.Count) VMs from VMM..." 
+ 
+ 
+foreach( $VM in $VMs ) 
+{ 
+    foreach( $drive in $VM.VirtualDVDDrives ) 
+    { 
+        if ( $drive.connection -like "ISOImage" )  
+        { 
+            Write-EventLog -LogName Application -EntryType Information -source $eventSourceName -EventId 1002 -Message "Disconnecting image $drive.ISO from $VM.name..." 
+            try 
+            { 
+               Set-SCVirtualDVDDrive $drive -NoMedia  | Out-Null 
+            } 
+            catch 
+            { 
+               Write-EventLog -LogName Application -EntryType Error -source $eventSourceName -EventId 2001 -Message $_.exception.message 
+            } 
+        } 
+    } 
+} 
+ 
+Write-EventLog -LogName Application -EntryType Information -source $eventSourceName -EventId 1003 -Message "Job completed..."
