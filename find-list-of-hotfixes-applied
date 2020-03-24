@@ -1,0 +1,13 @@
+$hotfixes = “KB1234567”, “KB1234567”, “KB1234567”, “KB1234567”
+
+$Computername = Get-Content C:\scripts\memberServerList.txt
+
+foreach ($comp in $Computername) {
+$hotfix = Get-HotFix -ComputerName “$comp”| Where-Object {$hotfixes -contains $_.HotfixID} | Select-Object -property “HotFixID”
+if (Get-HotFix | Where-Object {$hotfixes -contains $_.HotfixID})
+{
+“Found HotFix on $comp : ” + $hotfix.HotFixID
+} else {
+“Didn’t Find HotFix on $comp”
+}
+}
