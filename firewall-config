@@ -1,0 +1,18 @@
+some useful basic queries for configuring windows firewall
+
+-base commands: Get-Command *Firewall*
+-queries: Get-NetFirewallApplicationFilter -Program "*svchost*" | Get-NetFirewallRule
+-queries2: Get-NetFirewallPortFilter | ?{$_.LocalPort -eq 80} | Get-NetFirewallRule | ?{ $_.Direction –eq “Inbound” -and $_.Action –eq “Allow”}
+-basic config: Set-NetFirewallProfile -DefaultInboundAction Block -DefaultOutboundAction Allow –NotifyOnListen True -AllowUnicastResponseToMulticast True –LogFileName %SystemRoot%\System32\LogFiles\Firewall\pfirewall.log
+-add a basic allow rule: New-NetFirewallRule -DisplayName “Allow Inbound Telnet” -Direction Inbound -Program %SystemRoot%\System32\tlntsvr.exe -RemoteAddress LocalSubnet -Action Allow
+-add a basic deny rule: New-NetFirewallRule -DisplayName “Block Outbound Telnet” -Direction Outbound -Program %SystemRoot%\System32\tlntsvr.exe –Protocol TCP –LocalPort 23 -Action Block –PolicyStore domain.contoso.com\gpo_name 
+-modify rule: Set-NetFirewallRule –DisplayName “Allow Web 80” -RemoteAddress 192.168.0.2
+-modify based on query: Get-NetFirewallPortFilter | ?{$_.LocalPort -eq 80} | Get-NetFirewallRule | ?{ $_.Direction –eq “Inbound” -and $_.Action –eq “Allow”} | Set-NetFirewallRule -RemoteAddress 192.168.0.2
+-enable group: Enable-NetFirewallRule -DisplayGroup “Windows Firewall Remote Management” -Verbose
+	-find group Get-NetFirewallRule -DisplayGroup <group name>  or filter with: *remote*,*management*,etc
+-find/remove blocking rules:
+	$x = Get-NetFirewallRule –Action Block
+	$x
+	$x[0-3] | Remove-NetFirewallRule
+-enable ping: Set-NetFirewallRule -DisplayName “File and Printer Sharing (Echo Request – ICMPv4-In)” -enabled True
+-open new port: New-NetFirewallRule -DisplayName 'HTTP(S) Inbound' -Profile @('Domain', 'Private') -Direction Inbound -Action Allow -Protocol TCP -LocalPort @('80', '443')
