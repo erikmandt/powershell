@@ -1,0 +1,38 @@
+$file = Import-Csv C:\test\test.csv
+
+ForEach ($entry in $file)
+{
+$Exists = ""
+$Exists = Get-ADGroup $entry.NewDL -ErrorAction SilentlyContinue
+If ($Exists) {
+	Write-Host "Distribution Group $entry.NewDL Already Exists" -ForegroundColor Yellow
+	}
+ELSE {
+	New-ADGroup -Name $entry.NewDL -Path “OU=Users,ou=Testing OU,DC=domain,DC=corp,DC=com” -GroupCategory Distribution -GroupScope Global
+    Write-Host "Distribution Group $entry.NewDL has been created" -ForegroundColor Green
+	}
+}
+ForEach ($entry in $file)
+{
+$Exists = ""
+$Exists = Get-ADGroup $entry.Title -ErrorAction SilentlyContinue
+If ($Exists) {
+	Write-Host "Security Group $entry.Title Already Exists" -ForegroundColor Yellow
+	}
+ELSE {
+    New-ADGroup -Name $entry.Title -Path “OU=Users,ou=Testing OU,DC=domain,DC=corp,DC=com” -GroupCategory Security -GroupScope Global
+    Write-Host "Security Group $entry.Title has been created" -ForegroundColor Green
+    }
+}
+ForEach ($entry in $file)
+{
+$Exists = ""
+$Exists = Get-ADGroupMember $entry.Title -ErrorAction SilentlyContinue
+If ($Exists) {
+	Write-Host "Group Member $entry.Title Already Exists" -ForegroundColor Yellow
+	}
+ELSE {
+    Add-ADGroupMember -Identity $entry.NewDL -Members $entry.Title
+    Write-Host "Group Member $entry.Title has been created" -ForegroundColor Green
+    }
+}
