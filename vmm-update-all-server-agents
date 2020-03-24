@@ -1,0 +1,2 @@
+$credential = get-credential domain\vmmSvcAcct
+Get-SCVMMManagedComputer | where VersionState -ne UpToDate | Update-SCVMMManagedComputer -Credential $credential -RunAsynchronously
