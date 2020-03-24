@@ -1,0 +1,83 @@
+a set of queries for configuring iscsi in server core
+
+Get-NetIPConfiguration | select InterfaceAlias, InterfaceDescription, IPv4Address |ft -auto
+
+Get-NetAdapter | Where {$_.Status -eq "Up"}  | select name, InterfaceDescription | ft -AutoSize
+----------
+-rename
+Get-NetAdapter -Name "SLOT 4 Port 1" | Rename-NetAdapter -NewName "iscsi_1.5" –PassThru
+----------
+-disable dhcp
+Get-NetAdapter -Name "iscsi_1.5" | set-netipinterface –dhcp disabled
+----------
+-remove old ip
+Get-NetAdapter -Name "iscsi_1.5" | Remove-NetIPAddress
+----------
+-assign static ip 
+Get-NetAdapter -Name "iscsi_1.5" | new-netipaddress –addressfamily IPv4 –ipaddress 1.1.1.5 –prefixlength 24 #!iscsi –defaultgateway 168.99.194.1
+or
+netsh interface ip set address "iscsi_1.5" static 1.1.1.5 255.255.255.0
+New-NetRoute -interfaceindex 17 -NextHop "168.99.194.1" -destinationprefix "0.0.0.0/0"
+----------
+-assign dns(!iSCSI)
+Set-DnsClientServerAddress -InterfaceAlias host -ServerAddresses ("168.99.194.10","168.99.194.12")
+----------
+-iscsi config
+-disable bindings
+Get-NetAdapterBinding -Name "iscsi_1.5" 
+Disable-NetAdapterBinding -Name "iscsi_1.5" -ComponentID ms_rspndr
+Disable-NetAdapterBinding -Name "iscsi_1.5" -ComponentID ms_lltdio
+Disable-NetAdapterBinding -Name "iscsi_1.5" -ComponentID ms_msclient
+Disable-NetAdapterBinding -Name "iscsi_1.5" -ComponentID ms_pacer
+Disable-NetAdapterBinding -Name "iscsi_1.5" -ComponentID ms_server
+Disable-NetAdapterBinding -Name "iscsi_1.5" -ComponentID ms_tcpip6
+Get-NetAdapterBinding -Name "iscsi_1.5" 
+----------
+-iscsi config
+-jumbo packets
+Get-NetAdapterAdvancedProperty -Name "iscsi_1.5" 
+Set-NetAdapterAdvancedProperty -Name "iscsi_1.5" -RegistryKeyword "*JumboPacket" -RegistryValue 9014
+Get-NetAdapterAdvancedProperty -Name "iscsi_1.5" 
+----------
+-iscsi config
+-disable dns
+Set-DnsClient -RegisterThisConnectionsAddress $false -InterfaceAlias "iscsi_1.5" 
+Get-DnsClient
+----------
+-netbios : the first command is just to find the index number for the interface so we can set it using the second command
+wmic nicconfig get caption","index","TcpipNetbiosOptions
+wmic nicconfig where index=3 call SetTcpipNetbios 2
+wmic nicconfig get caption","index","TcpipNetbiosOptions
+-or just disable it all
+wmic /interactive:off nicconfig where TcpipNetbiosOptions=0 call SetTcpipNetbios 2
+wmic /interactive:off nicconfig where TcpipNetbiosOptions=1 call SetTcpipNetbios 2
+
+
+----------
+reset adapter
+Get-NetAdapter -Name "iscsi_1.5" | Disable-NetAdapter -Confirm:$false
+Enable-NetAdapter -Name "iscsi_1.5" -Confirm:$false
+Get-NetAdapter -Name "iscsi_1.5" | Remove-NetIPAddress
+----------
+reset default route and ipaddress : find ifIndex of item to remove
+Get-NetIPConfiguration | Format-table interfaceindex,interfacealias,ipv4address, @{ label=”DefaultGateway”; Expression={ $_.IPv4DefaultGateway.NextHop }}, @{ label=”DnsServers”; Expression={ $_.DnsServer.ServerAddresses}} -autosize
+Get-NetRoute -DestinationPrefix “0.0.0.0/0” | Format-table -autosize
+Remove-NetRoute -ifindex 19 -NextHop “1.1.2.1”
+Get-NetAdapter -Name "iscsi_1.5" | Remove-NetIPAddress
+----------
+get ip and mac
+$computername = "srvhpv1"
+Test-Connection $computername -count 1 | select Address,Ipv4Address
+
+$computername = "srvhpv1"
+Test-Connection $computername -count 1 | select @{Name="Computername";Expression={$_.Address}},Ipv4Address
+
+$computername = "srvhpv1"
+Get-WmiObject win32_networkadapterconfiguration -filter "ipenabled = 'True'" -ComputerName $computername |
+Select PSComputername,
+@{Name = "IPAddress";Expression = {
+[regex]$rx = "(\d{1,3}(\.?)){4}"
+$rx.matches($_.IPAddress).Value}},MACAddress
+
+get adapter full info
+Get-NetAdapter -Name iscsi_1.5 | fl *
