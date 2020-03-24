@@ -1,0 +1,1 @@
+Get-ADComputer -Filter * -searchbase "OU=Member Servers,DC=LWSD,DC=k12wa,DC=ORG" | Format-Table -Property Name >> c:\temp\memberServerList.txt
